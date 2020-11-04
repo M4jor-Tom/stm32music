@@ -14,8 +14,26 @@
 /*                                                                            */
 /******************************************************************************/
 
+/*
+Spin frequencies // CCR1 values
+low treshold[0x0009):   ???Hz
+low treshold[0x0011]:   50Hz
+do[11]:                 53Hz
+dod[12]:                  55
+re[13]:                   59
+mib[15]:                  63
+mi[16]:                   66
+fa[17]:                   70
+fad[19]:                  74
+sol[1a]:                  79
+sold[1c]:                 82.5
+la[1f]:                   88
+sib[22]:                  94.5
+si[25]:                   99
+high treshold[0x0026]:  108Hz
+*/
+
 #define EOA -1
-#define ARR_MAX 39
 #define _array int8_t []
 #define PROC_SPEED 1600000
 #include "stm32l1xx_nucleo.h"
@@ -34,6 +52,8 @@
 #define sib 10
 #define si 11
 
+#define commandFactor 1
+
 typedef uint64_t volatile reg;
 typedef struct note
 {
@@ -50,8 +70,8 @@ typedef struct partition
 }partition;
 
 //Sound functions
-void setBuzzer(note _note);
-void setMotor(note _note);
+void setBuzzer(note __note);
+void setMotor(note __note);
 void resetBuzzer();
 void resetMotor();
 
@@ -61,7 +81,8 @@ note timeNote(uint8_t __note, uint8_t _octave, float _hold, float _wait);
 note blankNote(float _hold);
 note lastNote();
 //void orchestra(partition buzzer, partition motor);
-void play(partition _partition, bool selectBuzzer);
+void play(partition _partition, uint8_t select);
+void motor_kick();
 
 
 void wait(uint64_t time);
@@ -100,21 +121,63 @@ void main()
       blankNote(1),
       lastNote()
     }
+  },
+  pokemon =
+  {
+    .readSpeed = 3,
+    .melody = (note [])
+    {
+      timeNote(re, 4, 0.5, 0.1),
+      timeNote(re, 4, 0.5, 0.1),
+      timeNote(re, 4, 0.5, 0.1),
+      timeNote(re, 4, 2, 0.1),
+      timeNote(re, 4, 0.5, 0.1),
+      timeNote(do, 4, 1, 0.1),
+      timeNote(la, 4, 0.5, 0.1),
+      timeNote(fa, 4, 2, 0.1),
+      timeNote(fa, 4, 0.5, 0.1),
+      timeNote(re, 4, 1, 0.1),
+      timeNote(re, 4, 1, 0.1),
+      timeNote(do, 4, 0.5, 0.1),
+      timeNote(la, 4, 0.5, 0.1),
+      timeNote(do, 4, 4, 0.1),
+      blankNote(1),
+      timeNote(re, 4, 1, 0.1),
+      timeNote(re, 4, 1.5, 0.1),
+      timeNote(re, 4, 0.5, 0.1),
+      timeNote(re, 4, 1, 0.1),
+      timeNote(do, 4, 0.5, 0.1),
+      timeNote(la, 4, 2, 0.1),
+      timeNote(la, 4, 0.5, 0.1),
+      timeNote(re, 4, 1, 0.1),
+      timeNote(re, 4, 1, 0.1),
+      timeNote(do, 4, 1, 0.1),
+      timeNote(la, 4, 0.5, 0.1),
+      timeNote(re, 4, 4, 0.1),
+      blankNote(1),
+      lastNote()
+    }
   };
   
   //Init
   TIM3_init();
   PWM_init();
-  //motor_init();
+  motor_init();
   buzzerInit();
   
-  for(uint8_t i = 0; i < 2; i++)
-    play(monAmiPierrot, 1);
+  //Démarrage en force du moteur
+  /*motor_kick();
   
-  while(1)
-  {
-    
-  }
+  play(monAmiPierrot, 0);
+  TIM3 -> CCR1 = 0;
+  
+  play(monAmiPierrot, 1);*/
+  
+  //motor_kick();
+  play(pokemon, 1);
+  
+  
+  while(1);
 }
 
 note newNote(uint8_t __note, uint8_t _octave)
@@ -227,7 +290,7 @@ void orchestra(partition buzzer, partition motor)
   }
 }*/
 
-void play(partition _partition, bool selectBuzzer)
+void play(partition _partition, uint8_t select)
 {
   uint64_t index = 0;
   
@@ -240,10 +303,10 @@ void play(partition _partition, bool selectBuzzer)
     wait((uint64_t)(_partition.melody[index].wait * (float)PROC_SPEED / _partition.readSpeed));
     if(_partition.melody[index].blank != 1)
     {
-      if(selectBuzzer)
-        setBuzzer(_partition.melody[index]);
-      else
+      if(select == 0 || select == 2)
         setMotor(_partition.melody[index]);
+      if(select == 1 || select == 2)
+        setBuzzer(_partition.melody[index]);
     }
     
     //Maintenir la note
@@ -315,7 +378,7 @@ void TIM3_init()
   RCC->APB1ENR |= (1<<1); /* force bit1 at 1 activating the TIM2 on APB1 data bus */
   
   TIM3->PSC =  7999; /*PSC+1=1599+1=1600 soit F=10kHz donc T=100us*/
-  TIM3->ARR = ARR_MAX; /*40*100us = 4ms donc ARR = 40-1 =39*/
+  TIM3->ARR = 39; /*40*100us = 4ms donc ARR = 40-1 =39*/
   
   TIM3->CR1 |= (1<<7); /*ARPE Autoreload register buffered*/
   TIM3->CR1 &= ~(1<<6); /*CMS edge alligned*/
@@ -333,14 +396,14 @@ void PWM_init()
   
   TIM3->CCR2 = 1; /*duty cycle*/
   
-  TIM3->CCER |= (1<<4); /*signal enable*//*
+  TIM3->CCER |= (1<<4); /*signal enable*/
   registerSets((reg *)&TIM3 -> CCMR1, (_array){0, 1, 4, 8, 9, 12, EOA}, 0);
   registerSets((reg *)&TIM3 -> CCMR1, (_array){5, 6, 13, 14, EOA}, 1);
   
   TIM3->CCR2 = 1; /*duty cycle*/
-  /*TIM3 -> CCR1 = 0;
+  TIM3 -> CCR1 = 0;
   
-  registerSets((reg *)&TIM3 -> CCER, (_array){0, 4}, 1);*/
+  registerSets((reg *)&TIM3 -> CCER, (_array){0, 4, EOA}, 1);
 }
 
 void motor_init()
@@ -354,6 +417,12 @@ void motor_init()
   
   registerSets((reg *)&GPIOB->AFR[0], (_array){16, 18, 19, EOA}, 0);
   registerSet((reg *)&GPIOB->AFR[0], 17, 1);
+}
+
+void motor_kick()
+{
+  TIM3 -> CCR1 = 0x0fff;
+  wait(100000);
 }
 
 void registerSet(reg *registerPtr, uint8_t index, uint8_t value)
@@ -381,12 +450,73 @@ void wait(uint64_t time)
 
 void setBuzzer(note __note)
 {
-    TIM3->PSC = PROC_SPEED * 10 / (ARR_MAX * getFrequency(__note._note, __note.octave));
+    TIM3->PSC = PROC_SPEED * 10 / (TIM3->ARR * getFrequency(__note._note, __note.octave));
 }
 
-void setMotor(note _note)
+uint16_t noteToMotorComamnd(uint8_t _note)
 {
-  
+  uint16_t command = 0;
+  switch(_note)
+  {
+    case do:
+      command = 0x0011;
+      break;
+      
+    case dod:
+      command = 0x0012;
+      break;
+      
+    case re:
+      command = 0x0013;
+      break;
+      
+    case mib:
+      command = 0x0015;
+      break;
+      
+    case mi:
+      command = 0x0016;
+      break;
+      
+    case fa:
+      command = 0x0017;
+      break;
+      
+    case fad:
+      command = 0x0019;
+      break;
+      
+    case sol:
+      command = 0x001a;
+      break;
+      
+    case sold:
+      command = 0x001c;
+      break;
+      
+    case la:
+      command = 0x001f;
+      break;
+      
+    case sib:
+      command = 0x0022;
+      break;
+      
+    case si:
+      command = 0x0025;
+      break;
+  }
+  return command;
+}
+
+void setMotorFreq(uint16_t command)
+{
+  TIM3 -> CCR1 = command * commandFactor;//(command * TIM3->ARR) / 4096;
+}
+
+void setMotor(note __note)
+{
+  setMotorFreq(noteToMotorComamnd(__note._note));
 }
 
 void resetBuzzer()
@@ -396,5 +526,5 @@ void resetBuzzer()
 
 void resetMotor()
 {
-  
+  TIM3 -> CCR1 = 0;
 }
