@@ -38,6 +38,7 @@ high treshold[0x0026]:  108Hz
 #define PROC_SPEED 1600000
 #include "stm32l1xx_nucleo.h"
 #include <stdbool.h>
+#include <math.h>
 
 #define do 0
 #define dod 1
@@ -76,6 +77,7 @@ void resetBuzzer();
 void resetMotor();
 
 //Music functions
+float getFrequency(uint8_t _note, uint8_t octave);
 note newNote(uint8_t __note, uint8_t _octave);
 note timeNote(uint8_t __note, uint8_t _octave, float _hold, float _wait);
 note blankNote(float _hold);
@@ -107,17 +109,17 @@ void main()
     .readSpeed = 5,
     .melody = (note [])
     {
-      newNote(do, 4),
-      newNote(do, 4),
-      newNote(do, 4),
-      newNote(re, 4),
-      timeNote(mi, 4, 2, 0.1),
-      timeNote(re, 4, 2, 0.1),
-      newNote(do, 4),
-      newNote(mi, 4),
-      newNote(re, 4),
-      newNote(re, 4),
-      newNote(do, 4),
+      newNote(do, 2),
+      newNote(do, 2),
+      newNote(do, 2),
+      newNote(re, 2),
+      timeNote(mi, 2, 2, 0.1),
+      timeNote(re, 2, 2, 0.1),
+      newNote(do, 2),
+      newNote(mi, 2),
+      newNote(re, 2),
+      newNote(re, 2),
+      newNote(do, 2),
       blankNote(1),
       lastNote()
     }
@@ -127,62 +129,78 @@ void main()
     .readSpeed = 3,
     .melody = (note [])
     {
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 2, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(do, 5, 1, 0.1),
-      timeNote(la, 4, 0.5, 0.1),
-      timeNote(fa, 4, 2, 0.1),
-      timeNote(fa, 4, 0.5, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(do, 5, 0.5, 0.1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(do, 5, 4, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 2, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(do, 3, 1, 0.1),
+      timeNote(la, 2, 0.5, 0.1),
+      timeNote(fa, 2, 2, 0.1),
+      timeNote(fa, 2, 0.5, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(do, 3, 0.5, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(do, 3, 4, 0.1),
       blankNote(1),
-      timeNote(mib, 5, 1, 0.1),
-      timeNote(mib, 5, 1.5, 0.1),
-      timeNote(mib, 5, 0.5, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(do, 5, 0.5, 0.1),
-      timeNote(sib, 4, 2, 0.1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(do, 5, 1, 0.1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(re, 5, 4, 0.1),
+      timeNote(mib, 3, 1, 0.1),
+      timeNote(mib, 3, 1.5, 0.1),
+      timeNote(mib, 3, 0.5, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(do, 3, 0.5, 0.1),
+      timeNote(sib, 2, 2, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(do, 3, 1, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(re, 3, 4, 0.1),
       blankNote(1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(do, 5, 1, 0.1),
-      timeNote(la, 4, 0.5, 0.1),
-      timeNote(fa, 4, 3, 0.1),
-      timeNote(re, 5, 0.5, 0.1),
-      timeNote(re, 5, 2, 0.1),
-      timeNote(do, 5, 1, 0.1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(do, 5, 4, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(do, 3, 1, 0.1),
+      timeNote(la, 2, 0.5, 0.1),
+      timeNote(fa, 2, 3, 0.1),
+      timeNote(re, 3, 0.5, 0.1),
+      timeNote(re, 3, 2, 0.1),
+      timeNote(do, 3, 1, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(do, 3, 4, 0.1),
       blankNote(1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(mib, 5, 0.5, 0.1),
-      timeNote(mib, 5, 0.5, 0.1),
-      timeNote(mib, 5, 2, 0.1),
-      timeNote(mib, 5, 0.5, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(do, 5, 0.5, 0.1),
-      timeNote(sib, 4, 2, 0.1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(re, 5, 1, 0.1),
-      timeNote(do, 5, 1, 0.1),
-      timeNote(sib, 4, 0.5, 0.1),
-      timeNote(re, 5, 3, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(mib, 3, 0.5, 0.1),
+      timeNote(mib, 3, 0.5, 0.1),
+      timeNote(mib, 3, 2, 0.1),
+      timeNote(mib, 3, 0.5, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(do, 3, 0.5, 0.1),
+      timeNote(sib, 2, 2, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(re, 3, 1, 0.1),
+      timeNote(do, 3, 1, 0.1),
+      timeNote(sib, 2, 0.5, 0.1),
+      timeNote(re, 3, 3, 0.1),
+      lastNote()
+    }
+  },
+  octaveTest =
+  {
+    .readSpeed = 3,
+    .melody = (note [])
+    {
+      newNote(do, 2),
+      newNote(re, 2),
+      newNote(mi, 2),
+      newNote(fa, 2),
+      newNote(sol, 2),
+      newNote(la, 2),
+      newNote(si, 2),
+      newNote(do, 3),
       lastNote()
     }
   };
@@ -193,7 +211,7 @@ void main()
   motor_init();
   buzzerInit();
   
-  //Démarrage en force du moteur
+  //Dï¿½marrage en force du moteur
   /*motor_kick();
   
   play(monAmiPierrot, 0);
@@ -203,7 +221,6 @@ void main()
   
   motor_kick();
   play(pokemon, 2);
-  
   
   while(1);
 }
@@ -283,7 +300,7 @@ float getFrequency(uint8_t _note, uint8_t octave)
       break;
   }
   
-  return _frequency * (octave + 1);
+  return _frequency * pow(2, (octave + 1));
 }
 
 /*uint64_t getCurrentNote(partition _partition, uint64_t timeElapsed, float *remainingTime)
