@@ -31,6 +31,7 @@ utilisez la fonction lastNote() à la fin de CHAQUE mélodie pour la terminer.
 -------ATTRIBUT 'readSpeed' DE LA STRUCTURE 'partition'
 Fait que la fonction play(partition, int) lira n fois plus vite la partition.
 
+---
 -------FONCTION play(partition, int)
 Premier argument: votre partition construite comme décrite ci-dessus
 Second argument: instruments
